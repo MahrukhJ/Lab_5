@@ -1,13 +1,274 @@
-Version: 1.0
+Lab_5
+attach(acs2017_ny)
+use_varb <- (AGE >= 25) & (AGE <= 65) & (LABFORCE == 2) & (WKSWORK2 > 4) & (UHRSWORK >= 35) & (Hispanic == 1) & (female == 1) & ((educ_college == 1) | (educ_advdeg == 1))
+dat_use <- subset(acs2017_ny,use_varb) # 
+detach()
 
-RestoreWorkspace: Default
-SaveWorkspace: Default
-AlwaysSaveHistory: Default
+attach(dat_use)
+#The following model will depict the linear regression of income wages depending on education, age and gender.
+model_temp1 <- lm(INCWAGE ~ AGE + I(AGE^2) + educ_college + educ_advdeg)
+summary(model_temp1)
 
-EnableCodeIndexing: Yes
-UseSpacesForTab: Yes
-NumSpacesForTab: 2
-Encoding: UTF-8
+educ_advdeg[complete.cases(educ_advdeg)]
 
-RnwWeave: Sweave
-LaTeX: pdfLaTeX
+Call:
+  lm(formula = INCWAGE ~ AGE + I(AGE^2) + educ_college + educ_advdeg)
+
+Residuals:
+  Min     1Q   Median   3Q    Max 
+-92579 -27246  -7617  15128 572069 
+
+Coefficients: (1 not defined because of singularities)
+              Estimate   Std. Error t value Pr(>|t|)    
+(Intercept)  -20807.28   25275.30  -0.823 0.410535    
+AGE            4622.36    1227.43   3.766 0.000174 ***
+I(AGE^2)        -47.11      14.31  -3.293 0.001020 ** 
+educ_college -21009.54    3270.69  -6.424 1.88e-10 ***
+educ_advdeg         NA         NA      NA       NA    
+---
+  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 56090 on 1262 degrees of freedom
+Multiple R-squared:  0.05773,	Adjusted R-squared:  0.05549 
+F-statistic: 25.77 on 3 and 1262 DF,  p-value: 3.5e-16
+
+#The estimate, std.error, t-value, and p-value were "not defined because of singularities"  for educ_advdeg 
+#which means, (after a quick Google search) that there are high levels of colinearity between the independent variables
+
+suppressMessages(require(stargazer))
+stargazer(model_temp1, type = "text")
+
+===============================================
+  Dependent variable:    
+  ---------------------------
+  INCWAGE          
+-----------------------------------------------
+  AGE                        4,622.356***        
+  (1,227.428)        
+
+I(AGE2)                     -47.109***         
+  (14.307)          
+
+educ_college              -21,009.540***       
+  (3,270.695)        
+
+educ_advdeg                                    
+
+
+Constant                    -20,807.280        
+(25,275.300)        
+
+-----------------------------------------------
+  Observations                   1,266           
+R2                             0.058           
+Adjusted R2                    0.055           
+Residual Std. Error   56,086.870 (df = 1262)   
+F Statistic          25.772*** (df = 3; 1262)  
+===============================================
+  Note:               *p<0.1; **p<0.05; ***p<0.01
+
+NNobs <- length(INCWAGE)
+set.seed(12345)
+graph_obs <- (runif(NNobs) < 0.1)
+dat_graph <-subset(dat_use,graph_obs)  
+plot(INCWAGE ~ AGE, pch = 16, col = rgb(0.5, 0.5, 0.5, alpha = 0.2), ylim = c(0,150000), data = dat_graph)
+to_be_predicted1 <- data.frame(AGE = 25:65, female = 1,white = 0, Hispanic = 1, AfAm =0, educ_hs = 0, educ_college = 1, educ_advdeg = 1)
+to_be_predicted1$yhat <- predict(model_temp1, newdata = to_be_predicted1)
+lines(yhat ~ AGE, data = to_be_predicted1)
+
+#The line while initially depicting a positive slope, begins to decrease after the age of 50. 
+#I find this interesting since I assumed the line would continue to increase with age. Nonetheless, 
+#the peak of this graph posits itself at around 50, depicting diminishing income wage returns before 
+#and after this age. 
+
+The second model will depict a linear regression of income based on age, age squared, age cubed, education level and ethnicity. 
+
+model_temp2 <- lm(INCWAGE ~ AGE + I(AGE^2) + I(AGE^3) + educ_hs + educ_college + educ_advdeg + white + AfAm + Hispanic)
+summary(model_temp2)
+
+Call:
+  lm(formula = INCWAGE ~ AGE + I(AGE^2) + I(AGE^3) + educ_hs + 
+       educ_college + educ_advdeg + white + AfAm + Hispanic)
+
+Residuals:
+  Min     1Q Median     3Q    Max 
+-95115 -26759  -7987  14931 565123 
+
+Coefficients: (3 not defined because of singularities)
+Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  -2.523e+05  1.011e+05  -2.494 0.012744 *  
+  AGE           2.127e+04  7.431e+03   2.863 0.004267 ** 
+  I(AGE^2)     -4.440e+02  1.761e+02  -2.522 0.011785 *  
+  I(AGE^3)      3.025e+00  1.344e+00   2.251 0.024580 *  
+  educ_hs              NA         NA      NA       NA    
+educ_college -1.927e+04  3.285e+03  -5.866 5.69e-09 ***
+  educ_advdeg          NA         NA      NA       NA    
+white         1.310e+04  3.388e+03   3.867 0.000116 ***
+  AfAm          7.246e+03  5.839e+03   1.241 0.214793    
+Hispanic             NA         NA      NA       NA    
+---
+  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 55720 on 1259 degrees of freedom
+Multiple R-squared:  0.07213,	Adjusted R-squared:  0.06771 
+F-statistic: 16.31 on 6 and 1259 DF,  p-value: < 2.2e-16
+
+suppressMessages(require(stargazer))
+stargazer(model_temp2, type = "text")
+
+===============================================
+  Dependent variable:    
+  ---------------------------
+  INCWAGE          
+-----------------------------------------------
+  AGE                        21,273.570***       
+  (7,430.784)        
+
+I(AGE2)                     -444.038**         
+  (176.051)         
+
+I(AGE3)                       3.025**          
+  (1.344)          
+
+educ_hs                                        
+
+
+educ_college              -19,270.320***       
+  (3,284.950)        
+
+educ_advdeg                                    
+
+
+white                      13,101.080***       
+  (3,388.334)        
+
+AfAm                         7,246.427         
+(5,838.622)        
+
+Hispanic                                       
+
+
+Constant                  -252,258.400**       
+  (101,129.400)       
+
+-----------------------------------------------
+  Observations                   1,266           
+R2                             0.072           
+Adjusted R2                    0.068           
+Residual Std. Error   55,722.940 (df = 1259)   
+F Statistic          16.311*** (df = 6; 1259)  
+===============================================
+  Note:               *p<0.1; **p<0.05; ***p<0.01
+
+NNobs <- length(INCWAGE)
+set.seed(12345)
+graph_obs <- (runif(NNobs) < 0.1)
+dat_graph <-subset(dat_use,graph_obs)  
+plot(INCWAGE ~ AGE, pch = 16, col = rgb(0.5, 0.5, 0.5, alpha = 0.2), ylim = c(0,150000), data = dat_graph)
+to_be_predicted2 <- data.frame(AGE = 25:65, female = 1, white = 1, Hispanic = 1, AfAm = 1,educ_hs = 1, educ_college = 1, educ_advdeg = 1)
+to_be_predicted2$yhat <- predict(model_temp2, newdata = to_be_predicted2)
+lines(yhat ~ AGE, data = to_be_predicted2)
+
+#This line is quite interesting to observe. The line steadily increases from 25 to 40, remains relatively constant from 40 to 55,
+#ever so slightly decreasing and then rises until 65. More specifically, the regression slope fo the line  depicts a positive correlation for income 
+#as age increases until the age of 40, remains constant until the age of 50, thus indicating that income does not increase and finally, 
+#increases again until the age of 65, which is where the peak of this graph lies. 
+#We can observe that by adding a higher order polynomial of age, the graph illustrated a positive slopw for ages 50-65, a contrast
+#from the regression line of the graph from model_temp1, where a decrease was noted. 
+
+For model_temp3, I am interested in observing the linear regression for income wages based on age, age squared, age cubed, age quadrupled, education level and ethnicity. 
+
+model_temp3 <- lm(INCWAGE ~ AGE + I(AGE^2) + I(AGE^3) + I(AGE^4) + educ_college + educ_advdeg + white + AfAm + Hispanic)
+summary(model_temp3)
+
+Call:
+  lm(formula = INCWAGE ~ AGE + I(AGE^2) + I(AGE^3) + I(AGE^4) + 
+       educ_college + educ_advdeg + white + AfAm + Hispanic)
+
+Residuals:
+  Min     1Q Median     3Q    Max 
+-96344 -26910  -7913  14826 565918 
+
+Coefficients: (2 not defined because of singularities)
+Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  -4.207e+04  4.205e+05  -0.100 0.920327    
+AGE           1.742e+02  4.164e+04   0.004 0.996663    
+I(AGE^2)      3.241e+02  1.502e+03   0.216 0.829205    
+I(AGE^3)     -9.008e+00  2.340e+01  -0.385 0.700399    
+I(AGE^4)      6.859e-02  1.332e-01   0.515 0.606663    
+educ_college -1.928e+04  3.286e+03  -5.867 5.65e-09 ***
+  educ_advdeg          NA         NA      NA       NA    
+white         1.313e+04  3.390e+03   3.873 0.000113 ***
+  AfAm          7.264e+03  5.840e+03   1.244 0.213847    
+Hispanic             NA         NA      NA       NA    
+---
+  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 55740 on 1258 degrees of freedom
+Multiple R-squared:  0.07232,	Adjusted R-squared:  0.06716 
+F-statistic: 14.01 on 7 and 1258 DF,  p-value: < 2.2e-16
+
+suppressMessages(require(stargazer))
+stargazer(model_temp3, type = "text")
+
+===============================================
+  Dependent variable:    
+  ---------------------------
+  INCWAGE          
+-----------------------------------------------
+  AGE                           174.197          
+(41,640.670)        
+
+I(AGE2)                       324.056          
+(1,501.885)        
+
+I(AGE3)                       -9.008           
+(23.405)          
+
+I(AGE4)                        0.069           
+(0.133)          
+
+educ_college              -19,280.190***       
+  (3,285.965)        
+
+educ_advdeg                                    
+
+
+white                      13,127.060***       
+  (3,389.699)        
+
+AfAm                         7,263.648         
+(5,840.422)        
+
+Hispanic                                       
+
+
+Constant                    -42,068.150        
+(420,507.800)       
+
+-----------------------------------------------
+  Observations                   1,266           
+R2                             0.072           
+Adjusted R2                    0.067           
+Residual Std. Error   55,739.210 (df = 1258)   
+F Statistic          14.011*** (df = 7; 1258)  
+===============================================
+  Note:               *p<0.1; **p<0.05; ***p<0.01
+
+
+NNobs <- length(INCWAGE)
+set.seed(12345)
+graph_obs <- (runif(NNobs) < 0.1)
+dat_graph <-subset(dat_use,graph_obs)  
+plot(INCWAGE ~ AGE, pch = 16, col = rgb(0.5, 0.5, 0.5, alpha = 0.2), ylim = c(0,150000), data = dat_graph)
+to_be_predicted2 <- data.frame(AGE = 25:65, female = 1, white = 1, Hispanic = 1, AfAm = 1,educ_hs = 0, educ_college = 1, educ_advdeg = 1)
+to_be_predicted2$yhat <- predict(model_temp3, newdata = to_be_predicted2)
+lines(yhat ~ AGE, data = to_be_predicted2)
+
+#Although little difference in the shape of the regression line when compared to the graph of model_temp2, 
+#the line for this regression illustrates more precision. Specifically, while the peak of this graph remains at 65,
+#similar to model_temp2, the line steadily increases until the age of 40, portraying an increase in income wages, and then decreases 
+#from ages 40-55, depicting diminishing returns on income and then increases unwaveringly, from 55 to 65. 
+
+
+
